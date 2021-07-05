@@ -14,4 +14,5 @@ class MissionResetROIFragment : MissionDetailFragment() {
         super.onApiConnected()
         typeSpinner.setSelection(commandAdapter.getPosition(MissionItemType.RESET_ROI))
     }
+
 }

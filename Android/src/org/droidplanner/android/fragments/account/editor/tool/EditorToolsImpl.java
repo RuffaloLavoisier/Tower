@@ -38,6 +38,8 @@ public abstract class EditorToolsImpl implements MissionSelection.OnSelectionUpd
 
         // If an mission item is selected, unselect it.
         missionProxy.selection.clearSelection();
+
+
     }
 
     public void onListItemClick(MissionItemProxy item) {
@@ -65,13 +67,14 @@ public abstract class EditorToolsImpl implements MissionSelection.OnSelectionUpd
     public abstract void setup();
 
     @Override
-    public void onDialogYes(String dialogTag){
+    public void onDialogYes(String dialogTag) {
 
     }
 
     @Override
-    public void onDialogNo(String dialogTag){
+    public void onDialogNo(String dialogTag) {
 
     }
+
 
 }

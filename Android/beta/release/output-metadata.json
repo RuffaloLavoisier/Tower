@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "org.droidplanner.android.beta",
+  "variantName": "processBetaReleaseResources",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "versionCode": 400010,
+      "versionName": "Tower-v4.0.0-beta.10",
+      "outputFile": "Android-beta-release.apk"
+    }
+  ]
+}

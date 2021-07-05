@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
@@ -40,7 +41,13 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
     private static final String STATE_SELECTED_TOOL = "selected_tool";
 
     public enum EditorTools {
-        MARKER, DRAW, TRASH, SELECTOR, NONE
+        MARKER,
+        DRAW,
+        COORDINATE,//update - sunghwan
+        ADDRESS,//update - sunghwan
+        TRASH,
+        SELECTOR,
+        NONE
     }
 
     public interface EditorToolListener {
@@ -80,6 +87,8 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
         editorToolsImpls[EditorTools.MARKER.ordinal()] = new MarkerToolsImpl(this);
         editorToolsImpls[EditorTools.DRAW.ordinal()] = new DrawToolsImpl(this);
         editorToolsImpls[EditorTools.TRASH.ordinal()] = new TrashToolsImpl(this);
+        editorToolsImpls[EditorTools.COORDINATE.ordinal()] = new CoordinateToolsImpl(this);//update - sunghwan
+        editorToolsImpls[EditorTools.ADDRESS.ordinal()] = new AddressToolsImpl(this);//update - sunghwan
         editorToolsImpls[EditorTools.SELECTOR.ordinal()] = new SelectorToolsImpl(this);
         editorToolsImpls[EditorTools.NONE.ordinal()] = new NoneToolsImpl(this);
     }
@@ -98,7 +107,27 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
     TextView clearMission;
     TextView clearSelected;
 
-     TextView selectAll;
+    TextView selectAll;
+    //coordinate
+    //-------------------------------------------
+    private View EnterCoordinateSubOptions;
+    EditText lat;
+    EditText lon;
+
+    TextView EnterCoordinate;
+
+    //-------------------------------------------
+    //address
+//-------------------------------------------
+    private View EnterAddressSubOptions;
+    public EditText address_fragment;//vv
+
+    TextView EnterAddress;
+
+//-------------------------------------------
+
+    public double lat_address;
+    public double lon_address;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -117,12 +146,12 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
             for (EditorToolsImpl toolImpl : editorToolsImpls)
                 toolImpl.onRestoreInstanceState(savedInstanceState);
         }
-
         final Context context = getContext();
 
         mEditorRadioGroup = (RadioGroup) view.findViewById(R.id.editor_tools_layout);
         editorSubTools = view.findViewById(R.id.editor_sub_tools);
 
+        //draw
         final DrawToolsImpl drawToolImpl = (DrawToolsImpl) editorToolsImpls[EditorTools.DRAW.ordinal()];
         final RadioButtonCenter buttonDraw = (RadioButtonCenter) view.findViewById(R.id.editor_tools_draw);
         final AdapterMissionItems drawItemsAdapter = new AdapterMissionItems(context,
@@ -132,6 +161,7 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
         drawItemsSpinner.setSelection(drawItemsAdapter.getPosition(drawToolImpl.getSelected()));
         drawItemsSpinner.setOnItemSelectedListener(drawToolImpl);
 
+        //marker pin
         final MarkerToolsImpl markerToolImpl = (MarkerToolsImpl) editorToolsImpls[EditorTools.MARKER.ordinal()];
         final RadioButtonCenter buttonMarker = (RadioButtonCenter) view.findViewById(R.id.editor_tools_marker);
         final AdapterMissionItems markerItemsAdapter = new AdapterMissionItems(context,
@@ -140,6 +170,34 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
         markerItemsSpinner.setAdapter(markerItemsAdapter);
         markerItemsSpinner.setSelection(markerItemsAdapter.getPosition(markerToolImpl.getSelected()));
         markerItemsSpinner.setOnItemSelectedListener(markerToolImpl);
+
+        //coordinate update - sunghwan
+        final RadioButtonCenter buttonCoordinate = (RadioButtonCenter) view.findViewById(R.id.editor_tools_coordinate);
+        final CoordinateToolsImpl coordinateToolImpl = (CoordinateToolsImpl) editorToolsImpls[EditorTools.COORDINATE.ordinal()];
+
+        EnterCoordinateSubOptions = view.findViewById(R.id.enter_coordinate_sub_options);
+
+        lat = (EditText) view.findViewById(R.id.input_Latitude);
+        lon = (EditText) view.findViewById(R.id.input_Longitude);
+
+        //button
+        EnterCoordinate = (TextView) view.findViewById(R.id.enter_coordinate);
+        EnterCoordinate.setOnClickListener(coordinateToolImpl);
+        //here
+
+        //pin address update - sunghwan
+        final RadioButtonCenter buttonAddress = (RadioButtonCenter) view.findViewById(R.id.editor_tools_address);
+        final AddressToolsImpl addressToolImpl = (AddressToolsImpl) editorToolsImpls[EditorTools.ADDRESS.ordinal()];
+
+        EnterAddressSubOptions = view.findViewById(R.id.enter_address_sub_options);
+
+        address_fragment = (EditText) view.findViewById(R.id.input_Address);
+        address_fragment.setOnClickListener(addressToolImpl);
+
+        //button
+        EnterAddress = (TextView) view.findViewById(R.id.enter_address);
+        EnterAddress.setOnClickListener(addressToolImpl);
+        //here
 
         final RadioButtonCenter buttonTrash = (RadioButtonCenter) view.findViewById(R.id.editor_tools_trash);
         final TrashToolsImpl trashToolImpl = (TrashToolsImpl) editorToolsImpls[EditorTools.TRASH.ordinal()];
@@ -157,7 +215,8 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
         selectAll = (TextView) view.findViewById(R.id.select_all_button);
         selectAll.setOnClickListener(selectorToolImpl);
 
-        for (View vv : new View[]{buttonDraw, buttonMarker, buttonTrash, buttonSelector}) {
+
+        for (View vv : new View[]{buttonDraw, buttonMarker, buttonCoordinate, buttonAddress, buttonTrash, buttonSelector}) {
             vv.setOnClickListener(this);
         }
     }
@@ -172,6 +231,7 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
 
         listener = (EditorToolListener) activity;
     }
+
 
     @Override
     public void onDetach() {
@@ -232,10 +292,10 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
 
     @Override
     public void onClick(View v) {
+
         EditorTools newTool = getToolForView(v.getId());
         if (this.tool == newTool)
             newTool = EditorTools.NONE;
-
         setTool(newTool);
     }
 
@@ -251,6 +311,12 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
 
         if (markerItemsSpinner != null)
             markerItemsSpinner.setVisibility(View.GONE);
+
+        if (EnterCoordinateSubOptions != null)//update - sunghwan
+            EnterCoordinateSubOptions.setVisibility(View.GONE);
+
+        if (EnterAddressSubOptions != null)//update - sunghwan
+            EnterAddressSubOptions.setVisibility(View.GONE);
 
         if (drawItemsSpinner != null)
             drawItemsSpinner.setVisibility(View.GONE);
@@ -326,6 +392,15 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
                 drawItemsSpinner.setVisibility(View.VISIBLE);
                 break;
 
+            case COORDINATE://update - sunghwan
+                editorSubTools.setVisibility(View.VISIBLE);
+                EnterCoordinateSubOptions.setVisibility(View.VISIBLE);
+                break;
+            case ADDRESS://update - sunghwan
+                editorSubTools.setVisibility(View.VISIBLE);
+                EnterAddressSubOptions.setVisibility(View.VISIBLE);
+                break;
+
             case MARKER:
                 editorSubTools.setVisibility(View.VISIBLE);
                 markerItemsSpinner.setVisibility(View.VISIBLE);
@@ -361,6 +436,11 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
             case R.id.editor_tools_draw:
                 return EditorTools.DRAW;
 
+            case R.id.editor_tools_coordinate://update - sunghwan
+                return EditorTools.COORDINATE;
+            case R.id.editor_tools_address://update - sunghwan
+                return EditorTools.ADDRESS;
+
             case R.id.editor_tools_trash:
                 return EditorTools.TRASH;
 
@@ -386,6 +466,12 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
             case DRAW:
                 return R.id.editor_tools_draw;
 
+            case COORDINATE://update - sunghwan
+                return R.id.editor_tools_coordinate;
+
+            case ADDRESS://update - sunghwan
+                return R.id.editor_tools_address;
+
             case TRASH:
                 return R.id.editor_tools_trash;
 
@@ -408,5 +494,7 @@ public class EditorToolsFragment extends ApiListenerFragment implements OnClickL
     public void onDialogNo(String dialogTag) {
         getToolImpl().onDialogNo(dialogTag);
     }
+
+
 
 }

@@ -148,7 +148,7 @@ public abstract class DrawerNavigationUI extends SuperUI implements
         return actionDrawer;
     }
 
-    @Override
+
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
             case BaseFlightControlFragment.FOLLOW_SETTINGS_UPDATE:

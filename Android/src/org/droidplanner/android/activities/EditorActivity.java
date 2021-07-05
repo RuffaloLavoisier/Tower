@@ -18,6 +18,10 @@ import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.widget.TextView;
 
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.widget.Autocomplete;
 import com.o3dr.android.client.utils.FileUtils;
 import com.o3dr.services.android.lib.coordinate.LatLong;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
@@ -48,6 +52,7 @@ import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
 import java.io.File;
 import java.util.List;
 import java.util.Locale;
+
 
 /**
  * This implements the map editor activity. The map editor activity allows the
@@ -84,7 +89,8 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
             final String action = intent.getAction();
             switch (action) {
                 case MissionProxy.ACTION_MISSION_PROXY_UPDATE:
-                    if (mAppPrefs.isZoomToFitEnable()) gestureMapFragment.getMapFragment().zoomToFit();
+                    if (mAppPrefs.isZoomToFitEnable())
+                        gestureMapFragment.getMapFragment().zoomToFit();
                     // FALL THROUGH
                 case AttributeEvent.PARAMETERS_REFRESH_COMPLETED:
                 case DroidPlannerPrefs.PREF_VEHICLE_DEFAULT_SPEED:
@@ -119,6 +125,8 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
     private FragmentManager fragmentManager;
 
     private TextView infoView;
+
+
 
     /**
      * If the mission was loaded from a file, the filename is stored here.
@@ -162,7 +170,7 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
 
         if (savedInstanceState != null) {
             String openedMissionFilename = savedInstanceState.getString(EXTRA_OPENED_MISSION_FILENAME);
-            if(!TextUtils.isEmpty(openedMissionFilename)) {
+            if (!TextUtils.isEmpty(openedMissionFilename)) {
                 openedMissionFile = new File(openedMissionFilename);
             }
         }
@@ -172,20 +180,35 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
 
         gestureMapFragment.setOnPathFinishedListener(this);
         openActionDrawer();
+
+        Places.initialize(getApplicationContext(), "******************"); //Places 시작함수 (컨텍스트,API키)
+       // Places.initialize(getApplicationContext(), "AIzaSyCQx6M2fQYH0RPnJxdhZxFaxY0TUQWVVOc"); //Places 시작함수 (컨텍스트,API키)
     }
 
     @Override
-    protected void onNewIntent(Intent intent){
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100 && resultCode == RESULT_OK){
+            Place place = Autocomplete.getPlaceFromIntent(data); //Place 객체 place 생성.
+            LatLng AddressCoordinate = place.getLatLng(); //LatLng 객체 coord 생성, coord에 place의 좌표값 넣기
+            editorToolsFragment.lat_address = AddressCoordinate.latitude;
+            editorToolsFragment.lon_address = AddressCoordinate.longitude; //Double 형 위/경도 좌표값. 추후에 이용할 수 있는 정보.
+            editorToolsFragment.address_fragment.setText(place.getAddress()); //에딧텍스트에 결과 주소 출력
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         handleIntent(intent);
     }
 
-    private void handleIntent(Intent intent){
-        if(intent == null || missionProxy == null)
+    private void handleIntent(Intent intent) {
+        if (intent == null || missionProxy == null)
             return;
 
         String action = intent.getAction();
-        if(TextUtils.isEmpty(action))
+        if (TextUtils.isEmpty(action))
             return;
 
         switch (action) {
@@ -306,7 +329,7 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if(openedMissionFile != null) {
+        if (openedMissionFile != null) {
             outState.putString(EXTRA_OPENED_MISSION_FILENAME, openedMissionFile.getAbsolutePath());
         }
     }
@@ -352,8 +375,8 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
         missionDialog.openDialog(this, DirectoryPath.getWaypointsPath(), FileList.getWaypointFileList());
     }
 
-    private void openMissionFile(Uri missionUri){
-        if(missionProxy != null) {
+    private void openMissionFile(Uri missionUri) {
+        if (missionProxy != null) {
             missionProxy.readMissionFromFile(missionUri);
         }
     }
@@ -385,7 +408,7 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
         dialog.show(getSupportFragmentManager(), MISSION_FILENAME_DIALOG_TAG);
     }
 
-    private static String getWaypointFilename(String prefix){
+    private static String getWaypointFilename(String prefix) {
         return prefix + "-" + FileStream.getTimeStamp();
     }
 
@@ -400,15 +423,15 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
 
             Pair<Double, Double> distanceAndTime = missionProxy.getMissionFlightTime();
             LengthUnit convertedMissionLength = unitSystem.getLengthUnitProvider()
-                .boxBaseValueToTarget(distanceAndTime.first);
+                    .boxBaseValueToTarget(distanceAndTime.first);
 
             double time = distanceAndTime.second;
             String infoString = getString(R.string.editor_info_window_distance,
-                convertedMissionLength.toString()) +
-                ", " +
-                getString(R.string.editor_info_window_flight_time, time == Double.POSITIVE_INFINITY
-                    ? time
-                    : String.format(Locale.US, "%1$02d:%2$02d", ((int) time / 60), ((int) time % 60)));
+                    convertedMissionLength.toString()) +
+                    ", " +
+                    getString(R.string.editor_info_window_flight_time, time == Double.POSITIVE_INFINITY
+                            ? time
+                            : String.format(Locale.US, "%1$02d:%2$02d", ((int) time / 60), ((int) time % 60)));
 
             infoView.setText(infoString);
 
@@ -455,6 +478,7 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
         editorListFragment.enableDeleteMode(toolImpl.getEditorTools() == EditorTools.TRASH);
     }
 
+
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
@@ -462,7 +486,7 @@ public class EditorActivity extends DrawerNavigationUI implements OnPathFinished
     }
 
     @Override
-    protected void addToolbarFragment(){
+    protected void addToolbarFragment() {
         final int toolbarId = getToolbarId();
         editorListFragment = (EditorListFragment) fragmentManager.findFragmentById(toolbarId);
         if (editorListFragment == null) {
